@@ -1,1 +1,5 @@
-{ "clientId": "978995592736944188", "source": "music.yandex.ru" }
+{
+  "clientId": "978995592736944188",
+  "source": "music.yandex.ru",
+  "style": true
+}

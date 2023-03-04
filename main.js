@@ -1,10 +1,13 @@
-let config = require('./config.json'),
+let fs = require('fs'),
+  config = require('./config.json'),
   win;
 
 const DiscordRPC = require('discord-rpc'),
   rpc = new DiscordRPC.Client({ transport: 'ipc' }),
   { app, BrowserWindow } = require('electron');
 DiscordRPC.register(config.clientId);
+
+const styles = fs.readFileSync('./styles.css', 'utf-8', () => {});
 
 app.on('ready', () => {
   win = new BrowserWindow({
@@ -21,6 +24,9 @@ app.on('ready', () => {
 
   win.on('page-title-updated', function (e) {
     e.preventDefault();
+    if (config.style) {
+      win.webContents.insertCSS(styles);
+    }
   });
 
   win.once('ready-to-show', () => {
@@ -30,7 +36,12 @@ app.on('ready', () => {
   win.on('closed', () => {
     win = null;
   });
+
   win.loadURL(`https://${config.source}`);
+
+  if (config.style) {
+    win.webContents.insertCSS(styles);
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -41,10 +52,7 @@ app.on('window-all-closed', () => {
 function setActivity() {
   if (!rpc || !win) return;
 
-  if (config.source.indexOf('music.yandex.ru') != -1) {
-    yandex();
-    return;
-  }
+  yandex();
 }
 
 async function yandex() {
