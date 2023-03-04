@@ -12,8 +12,8 @@ DiscordRPC.register(config.clientId);
 
 app.on('ready', () => {
   win = new BrowserWindow({
-    width: 800,
-    height: 700,
+    width: 1480,
+    height: 920,
     minWidth: 300,
     minHeight: 300,
     show: false,
