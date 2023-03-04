@@ -1,13 +1,9 @@
-let fs = require('fs'),
-  config = require('./config.json'),
-  saveConfig = () => {
-    fs.writeFile('./config.json', JSON.stringify(config), 'utf8', () => {});
-  },
+let config = require('./config.json'),
   win;
 
 const DiscordRPC = require('discord-rpc'),
   rpc = new DiscordRPC.Client({ transport: 'ipc' }),
-  { app, BrowserWindow, Menu } = require('electron');
+  { app, BrowserWindow } = require('electron');
 DiscordRPC.register(config.clientId);
 
 app.on('ready', () => {
@@ -16,11 +12,16 @@ app.on('ready', () => {
     height: 920,
     minWidth: 300,
     minHeight: 300,
+    title: require('./package.json').name,
     show: false,
     webPreferences: { nodeIntegration: false },
     resizable: true,
   });
-  win.removeMenu();
+  win.setMenuBarVisibility(false);
+
+  win.on('page-title-updated', function (e) {
+    e.preventDefault();
+  });
 
   win.once('ready-to-show', () => {
     win.show();
