@@ -1,13 +1,26 @@
 let fs = require('fs'),
-  config = require('./config.json'),
+  path = require('path'),
   win;
+
+const dotenv = require('dotenv');
+dotenv.config();
+
+const configPath =
+  process.env.NODE_ENV === 'development'
+    ? path.join(__dirname, '/config.json')
+    : path.join(process.execPath, '../config.json');
+const config = require(configPath);
 
 const DiscordRPC = require('discord-rpc'),
   rpc = new DiscordRPC.Client({ transport: 'ipc' }),
   { app, BrowserWindow } = require('electron');
 DiscordRPC.register(config.clientId);
 
-const styles = fs.readFileSync('./styles.css', 'utf-8', () => {});
+const stylesPath =
+  process.env.NODE_ENV === 'development'
+    ? path.join(__dirname, 'styles/styles.css')
+    : path.join(process.resourcesPath, 'styles/styles.css');
+const styles = fs.readFileSync(stylesPath, 'utf-8', () => {});
 
 app.on('ready', () => {
   win = new BrowserWindow({

@@ -1,6 +1,6 @@
 {
   "name": "YandexMusicPresence",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Electron client for Yandex Music with Discord RPC",
   "main": "main.js",
   "scripts": {
@@ -27,13 +27,20 @@
     "electron-builder": "^23.6.0"
   },
   "dependencies": {
-    "discord-rpc": "^4.0.1"
+    "discord-rpc": "^4.0.1",
+    "dotenv": "^16.0.3"
   },
   "build": {
     "appId": "com.infr.yandexrpc",
     "productName": "YandexMusicPresence",
     "mac": {
       "category": "com.infr.yandexrpc"
-    }
+    },
+    "extraFiles": [
+      "./config.json"
+    ],
+    "extraResources": [
+      "./styles/**"
+    ]
   }
 }
