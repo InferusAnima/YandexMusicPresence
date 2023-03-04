@@ -1,0 +1,38 @@
+{
+  "name": "yandex-music-presence",
+  "version": "2.5.0",
+  "description": "Electron client for Yandex Music with Discord RPC",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "youtube",
+    "yandex",
+    "music",
+    "client",
+    "discord",
+    "rpc",
+    "rich",
+    "presence"
+  ],
+  "author": "InferusAnima",
+  "license": "MIT",
+  "repository": "github:InferusAnima/YandexMusicPresence",
+  "devDependencies": {
+    "electron": "^23.1.2",
+    "electron-builder": "^23.6.0"
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1"
+  },
+  "build": {
+    "appId": "YandexMusicPresence",
+    "mac": {
+      "category": "com.infr.yandexrpc"
+    }
+  }
+}
