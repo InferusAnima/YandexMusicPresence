@@ -1,6 +1,6 @@
 {
   "name": "YandexMusicPresence",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Electron client for Yandex Music with Discord RPC",
   "main": "main.js",
   "scripts": {
