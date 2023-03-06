@@ -70,26 +70,30 @@ function setActivity() {
   yandex();
 }
 
-ipcMain.handle('track_switched', async (event, arg) => {
+let just_run;
+
+ipcMain.handle('track_switched', async (event, data) => {
   return new Promise(async function (resolve, reject) {
-    const data = arg;
-
     await yandex(data);
-
     resolve(`track_switched: ${data.title}`);
+    just_run = true;
   });
 });
 
-ipcMain.handle('track_playing', async (event, arg) => {
-  return new Promise(function (resolve, reject) {
-    if (!arg) {
-      rpc.clearActivity();
-    }
-    resolve(`track_playing: ${arg}`);
+ipcMain.handle('track_playing', async (event, state) => {
+  return new Promise(async function (resolve, reject) {
+    await yandex();
+    resolve(`track_playing: ${state}`);
+    just_run = true;
   });
 });
 
-async function yandex(data = null) {
+async function yandex(data) {
+  if (just_run) {
+    just_run = false;
+    return;
+  }
+
   if (!data) {
     data = await win.webContents.executeJavaScript(
       'externalAPI.getCurrentTrack()'
@@ -112,18 +116,23 @@ async function yandex(data = null) {
     startTimestamp.getTime() + (data.duration - progress.position) * 1000
   );
 
-  rpc.setActivity({
-    details: data.title,
-    state: data.artists.map((f) => f.title).join(', '),
-    largeImageKey: 'https://' + data.cover.replace('%%', '400x400'),
-    largeImageText: 'YandexMusic',
-    smallImageKey: 'og-image',
-    startTimestamp: startTimestamp,
-    endTimestamp: endTimestamp,
-    buttons: [
-      { label: 'Go to the track', url: `https://${config.source}${data.link}` },
-    ],
-  });
+  if (state) {
+    rpc.setActivity({
+      details: data.title,
+      state: data.artists.map((f) => f.title).join(', '),
+      largeImageKey: 'https://' + data.cover.replace('%%', '400x400'),
+      largeImageText: 'YandexMusic',
+      smallImageKey: 'og-image',
+      startTimestamp: startTimestamp,
+      endTimestamp: endTimestamp,
+      buttons: [
+        {
+          label: 'Go to the track',
+          url: `https://${config.source}${data.link}`,
+        },
+      ],
+    });
+  }
 }
 
 rpc.on('ready', () => {
