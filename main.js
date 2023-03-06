@@ -13,7 +13,7 @@ const config = require(configPath);
 
 const DiscordRPC = require('discord-rpc'),
   rpc = new DiscordRPC.Client({ transport: 'ipc' }),
-  { app, BrowserWindow } = require('electron');
+  { app, BrowserWindow, ipcMain } = require('electron');
 DiscordRPC.register(config.clientId);
 
 const stylesPath =
@@ -30,7 +30,9 @@ app.on('ready', () => {
     minHeight: 300,
     title: require('./package.json').name,
     show: false,
-    webPreferences: { nodeIntegration: false },
+    webPreferences: {
+      preload: path.join(__dirname, '/preload.js'),
+    },
     resizable: true,
   });
   win.setMenuBarVisibility(false);
@@ -68,10 +70,31 @@ function setActivity() {
   yandex();
 }
 
-async function yandex() {
-  let data = await win.webContents.executeJavaScript(
-    'externalAPI.getCurrentTrack()'
-  );
+ipcMain.handle('track_switched', async (event, arg) => {
+  return new Promise(async function (resolve, reject) {
+    const data = arg;
+
+    await yandex(data);
+
+    resolve(`track_switched: ${data.title}`);
+  });
+});
+
+ipcMain.handle('track_playing', async (event, arg) => {
+  return new Promise(function (resolve, reject) {
+    if (!arg) {
+      rpc.clearActivity();
+    }
+    resolve(`track_playing: ${arg}`);
+  });
+});
+
+async function yandex(data = null) {
+  if (!data) {
+    data = await win.webContents.executeJavaScript(
+      'externalAPI.getCurrentTrack()'
+    );
+  }
   let state = await win.webContents.executeJavaScript(
     'externalAPI.isPlaying()'
   );
@@ -105,6 +128,14 @@ async function yandex() {
 
 rpc.on('ready', () => {
   console.log('Authed for user', rpc.user.username);
+
+  win.webContents.executeJavaScript(
+    'externalAPI.on(externalAPI.EVENT_TRACK, async () => console.log(await api.invoke("track_switched", externalAPI.getCurrentTrack())));'
+  );
+
+  win.webContents.executeJavaScript(
+    'externalAPI.on(externalAPI.EVENT_STATE, async () => console.log(await api.invoke("track_playing", externalAPI.isPlaying())));'
+  );
 
   setInterval(() => setActivity(), 5e3);
 });
