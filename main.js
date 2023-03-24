@@ -1,14 +1,16 @@
 let fs = require('fs'),
   path = require('path'),
-  win;
+  win,
+  winLyrics;
 
 const dotenv = require('dotenv');
 dotenv.config();
 
-const configPath =
-  process.env.NODE_ENV === 'development'
-    ? path.join(__dirname, '/config.json')
-    : path.join(process.execPath, '../config.json');
+const isDev = process.env.NODE_ENV === 'development';
+
+const configPath = isDev
+  ? path.join(__dirname, '/config.json')
+  : path.join(process.execPath, '../config.json');
 const config = require(configPath);
 
 const DiscordRPC = require('discord-rpc'),
@@ -16,11 +18,15 @@ const DiscordRPC = require('discord-rpc'),
   { app, BrowserWindow, ipcMain } = require('electron');
 DiscordRPC.register(config.clientId);
 
-const stylesPath =
-  process.env.NODE_ENV === 'development'
-    ? path.join(__dirname, 'styles/styles.css')
-    : path.join(process.resourcesPath, 'styles/styles.css');
+const stylesPath = isDev
+  ? path.join(__dirname, 'styles/styles.css')
+  : path.join(process.resourcesPath, 'styles/styles.css');
 const styles = fs.readFileSync(stylesPath, 'utf-8', () => {});
+
+const btnLyricsPath = isDev
+  ? path.join(__dirname, 'lyrics/btnLyrics.js')
+  : path.join(process.resourcesPath, 'lyrics/btnLyrics.js');
+const btnLyrics = fs.readFileSync(btnLyricsPath, 'utf-8', () => {});
 
 app.on('ready', () => {
   win = new BrowserWindow({
@@ -42,6 +48,8 @@ app.on('ready', () => {
     if (config.style) {
       win.webContents.insertCSS(styles);
     }
+
+    win.webContents.executeJavaScript(btnLyrics);
   });
 
   win.once('ready-to-show', () => {
@@ -85,6 +93,60 @@ ipcMain.handle('track_playing', async (event, state) => {
     await yandex();
     resolve(`track_playing: ${state}`);
     just_run = true;
+  });
+});
+
+const createLyricsWin = () => {
+  winLyrics = new BrowserWindow({
+    width: 400,
+    height: 700,
+    minWidth: 400,
+    minHeight: 700,
+    maxHeight: 700,
+    title: require('./package.json').name,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '/preload.js'),
+    },
+    resizable: true,
+    maximizable: false,
+  });
+  winLyrics.setMenuBarVisibility(false);
+
+  winLyrics.on('closed', () => {
+    winLyrics = null;
+  });
+};
+
+ipcMain.handle('lyrics_click', async (event, state) => {
+  return new Promise(async function (resolve, reject) {
+    if (!winLyrics) {
+      createLyricsWin();
+    }
+
+    if (winLyrics.isVisible()) {
+      winLyrics.hide();
+    } else {
+      winLyrics.show();
+
+      const lyricsUrl = isDev
+        ? path.join(__dirname, 'lyrics/lyrics.html')
+        : path.join(process.resourcesPath, 'lyrics/lyrics.html');
+
+      winLyrics.loadURL(lyricsUrl);
+      winLyrics.webContents.openDevTools();
+    }
+
+    resolve('lyrics_click');
+  });
+});
+
+ipcMain.handle('track_progress', async (event, progress) => {
+  return new Promise(async function (resolve, reject) {
+    winLyrics.webContents.executeJavaScript(
+      `logProgress(${progress.position});`
+    );
+    resolve(`track_progress: ${progress}`);
   });
 });
 
@@ -144,6 +206,10 @@ rpc.on('ready', () => {
 
   win.webContents.executeJavaScript(
     'externalAPI.on(externalAPI.EVENT_STATE, async () => console.log(await api.invoke("track_playing", externalAPI.isPlaying())));'
+  );
+
+  win.webContents.executeJavaScript(
+    'externalAPI.on(externalAPI.EVENT_PROGRESS, async () => await api.invoke("track_progress", externalAPI.getProgress()));'
   );
 
   setInterval(() => setActivity(), 5e3);

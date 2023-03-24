@@ -1,0 +1,33 @@
+<script src="lrc2html.js"></script>
+<div class="lyrics">
+  <div class="container">
+    <small class="text-muted">
+      <span id="lrcTime"></span> |
+      <span id="currentTime"></span>
+    </small>
+    <br />
+    <div class="ArloadLine">
+      <div id="ArProgress" style="background-color: red; height: 10px"></div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <div class="lead" id="lrcP"><span class="lrcani"></span></div>
+      </div>
+      <div class="col">
+        <small class="text-muted" id="lrcN"></small>
+      </div>
+    </div>
+  </div>
+  <hr />
+
+  <audio
+    id="mediaAudio"
+    src="https://transfer.sh/get/yuHSBt/%D0%91%D0%B8-2%20-%20%D0%9B%D0%B0%D0%B9%D0%BA%D0%B8.mp3"
+    controls
+    style="width: 100%"
+    preload
+  ></audio>
+</div>
+
+<script src="lyrics.js"></script>
