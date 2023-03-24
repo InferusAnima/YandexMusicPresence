@@ -40,7 +40,8 @@
       "./config.json"
     ],
     "extraResources": [
-      "./styles/**"
+      "./styles/**",
+      "./lyrics/**"
     ]
   }
 }

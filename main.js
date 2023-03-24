@@ -48,7 +48,9 @@ app.on('ready', () => {
     if (config.style) {
       win.webContents.insertCSS(styles);
     }
+  });
 
+  win.webContents.on('did-finish-load', function () {
     win.webContents.executeJavaScript(btnLyrics);
   });
 
@@ -83,6 +85,9 @@ let just_run;
 ipcMain.handle('track_switched', async (event, data) => {
   return new Promise(async function (resolve, reject) {
     await yandex(data);
+    if (winLyrics) {
+      winLyrics.webContents.executeJavaScript(`logState('${data.title}');`);
+    }
     resolve(`track_switched: ${data.title}`);
     just_run = true;
   });
@@ -93,6 +98,28 @@ ipcMain.handle('track_playing', async (event, state) => {
     await yandex();
     resolve(`track_playing: ${state}`);
     just_run = true;
+  });
+});
+
+ipcMain.handle('track_progress', async (event, progress) => {
+  return new Promise(async function (resolve, reject) {
+    if (winLyrics) {
+      winLyrics.webContents.executeJavaScript(
+        `logProgress(${progress.position}, ${progress.duration});`
+      );
+    }
+    resolve(`track_progress: ${progress}`);
+  });
+});
+
+ipcMain.handle('track_seek', async (event, progress) => {
+  return new Promise(async function (resolve, reject) {
+    if (winLyrics) {
+      winLyrics.webContents.executeJavaScript(
+        `seekProgress(${progress.position}, ${progress.duration});`
+      );
+    }
+    resolve(`track_seek: ${progress.position}`);
   });
 });
 
@@ -118,10 +145,14 @@ const createLyricsWin = () => {
   });
 };
 
-ipcMain.handle('lyrics_click', async (event, state) => {
+ipcMain.handle('lyrics_click', async (event, data) => {
   return new Promise(async function (resolve, reject) {
     if (!winLyrics) {
       createLyricsWin();
+
+      winLyrics.webContents.on('did-finish-load', function () {
+        winLyrics.webContents.executeJavaScript(`logState('${data.title}');`);
+      });
     }
 
     if (winLyrics.isVisible()) {
@@ -134,19 +165,9 @@ ipcMain.handle('lyrics_click', async (event, state) => {
         : path.join(process.resourcesPath, 'lyrics/lyrics.html');
 
       winLyrics.loadURL(lyricsUrl);
-      winLyrics.webContents.openDevTools();
     }
 
-    resolve('lyrics_click');
-  });
-});
-
-ipcMain.handle('track_progress', async (event, progress) => {
-  return new Promise(async function (resolve, reject) {
-    winLyrics.webContents.executeJavaScript(
-      `logProgress(${progress.position});`
-    );
-    resolve(`track_progress: ${progress}`);
+    resolve(`lyrics_click: ${data.title}`);
   });
 });
 
@@ -210,6 +231,10 @@ rpc.on('ready', () => {
 
   win.webContents.executeJavaScript(
     'externalAPI.on(externalAPI.EVENT_PROGRESS, async () => await api.invoke("track_progress", externalAPI.getProgress()));'
+  );
+
+  win.webContents.executeJavaScript(
+    'document.getElementsByClassName("player-progress")[0].onclick = async () => console.log(await api.invoke("track_seek", externalAPI.getProgress()));'
   );
 
   setInterval(() => setActivity(), 5e3);

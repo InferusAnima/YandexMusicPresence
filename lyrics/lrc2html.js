@@ -7,19 +7,18 @@ var oLRC = {
   ms: [],
 };
 
-function showLRC(lrc, audioHTML, lrcAni, lrcN, progress, currentTime) {
+function showLRC(lrc, lrcAni, lrcN, progress, currentTime) {
   var currentTimeElem = document.getElementById(currentTime);
   var lrcAniElem = document.getElementById(lrcAni);
   var lrcNElem = document.getElementById(lrcN);
 
-  var audio = document.getElementById(audioHTML);
-  var nowTime = audio.currentTime;
+  var nowTime = track_progress;
   document.getElementById(progress).style.width =
-    (nowTime / audio.duration) * 100 + '%';
+    (nowTime / track_duration) * 100 + '%';
   var lrcJson = lrc.ms;
   for (i1 = 0; i1 < lrcJson.length; i1++) {
     currentTimeElem.innerHTML = `${nowTime.toFixed(2)} 
-    / ${audio.duration.toFixed(2)}`;
+    / ${track_duration.toFixed(2)}`;
     var info1 = nowTime >= lrcJson[i1].t - 0.5;
     if (info1) {
       currentTimeElem.innerHTML = lrcJson[i1].t;
@@ -38,7 +37,7 @@ function showLRC(lrc, audioHTML, lrcAni, lrcN, progress, currentTime) {
     }
   }
   requestAnimationFrame(() => {
-    showLRC(lrc, audioHTML, lrcAni, lrcN, progress, currentTime);
+    showLRC(lrc, lrcAni, lrcN, progress, currentTime);
   });
 }
 

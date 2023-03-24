@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
       'track_switched',
       'track_playing',
       'track_progress',
+      'track_seek',
       'lyrics_click',
     ];
     if (validChannels.includes(channel)) {
