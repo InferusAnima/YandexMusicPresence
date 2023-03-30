@@ -4,7 +4,6 @@ let track_duration = 0;
 
 const seek = (e) => {
   if (e.srcElement.seeking || e.srcElement.seeked) {
-    console.log('seek');
     createLrcObj(lrc);
   }
 };
@@ -24,10 +23,108 @@ const seekProgress = (progress, duration) => {
   }
 };
 
-const logState = (title) => {
-  fetch('main.lrc').then(async (resp) => {
-    lrc = await resp.text();
+// const DEFAULT_SIGN_KEY = 'p93jhgh689SBReK6ghtw62';
 
-    showLRC(createLrcObj(lrc), 'lrcP', 'lrcN', 'ArProgress', 'lrcTime');
+// const getSign = (id) => {
+//   const timestamp = Date.now().toString().slice(0, -3);
+//   const message = `${id}${timestamp}`;
+
+//   const hash = CryptoJS.HmacSHA256(message, DEFAULT_SIGN_KEY);
+//   const words = CryptoJS.enc.Utf8.parse(hash);
+//   const sign = CryptoJS.enc.Base64.stringify(words);
+
+//   console.log(sign);
+//   return { sign: sign, timestamp: timestamp };
+// };
+
+const fetchTrack = (id) => {
+  return new Promise(function (resolve, reject) {
+    fetch('https://api.music.yandex.net/tracks', {
+      method: 'POST',
+      withCredentials: true,
+      credentials: 'include',
+      headers: {
+        'Host': 'api.music.yandex.net',
+        'User-Agent': 'Yandex-Music-API',
+        'X-Yandex-Music-Client': 'YandexMusicAndroid/23020251',
+        'Authorization':
+          'OAuth y0_AgAAAAALr8LkAAG8XgAAAADfRQWjhOxPpP5SSPKVfTdvFrZjXqrGf64',
+      },
+      body: new URLSearchParams({
+        'with-positions': 'True',
+        'track-ids': id,
+      }),
+    })
+      .then((res) => res.json())
+      .then(
+        (result) => {
+          if (result.result[0].lyricsInfo.hasAvailableSyncLyrics) {
+            fetchLyrics(id).then(
+              (lyrics) => {
+                resolve(lyrics);
+              },
+              (error) => {
+                reject(`Error: ${error}`);
+              }
+            );
+          } else if (result.result[0].lyricsInfo.hasAvailableTextLyrics) {
+            fetchLyrics(id, 'TEXT').then(
+              (lyrics) => {
+                resolve(lyrics);
+              },
+              (error) => {
+                reject(`Error: ${error}`);
+              }
+            );
+          } else {
+            reject('No lyrics');
+          }
+        },
+        (error) => {
+          reject(`Error: ${error}`);
+        }
+      );
   });
+};
+
+const fetchLyrics = (id, format = 'LRC') => {
+  return new Promise(function (resolve, reject) {
+    const sign = getSign(id);
+    fetch(
+      `https://api.music.yandex.net/tracks/${id}/lyrics?format=${format}&timeStamp=${sign.timestamp}&sign=${sign.sign}`,
+      {
+        withCredentials: true,
+        credentials: 'include',
+        headers: new Headers({
+          'Host': 'api.music.yandex.net',
+          'User-Agent': 'Yandex-Music-API',
+          'X-Yandex-Music-Client': 'YandexMusicAndroid/23020251',
+          'Authorization':
+            'OAuth y0_AgAAAAALr8LkAAG8XgAAAADfRQWjhOxPpP5SSPKVfTdvFrZjXqrGf64',
+        }),
+      }
+    )
+      .then((res) => res.json())
+      .then(
+        (result) => {
+          console.log(result);
+        },
+        (error) => {
+          reject(`Error: ${error}`);
+        }
+      );
+  });
+};
+
+const logState = (link) => {
+  const id = link.split('/').slice(-1);
+  fetchTrack(id).then(
+    (lyrics) => {
+      lrc = lyrics;
+      showLRC(createLrcObj(lrc), 'lrcP', 'lrcN', 'ArProgress', 'lrcTime');
+    },
+    (error) => {
+      console.log(error);
+    }
+  );
 };

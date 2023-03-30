@@ -86,7 +86,7 @@ ipcMain.handle('track_switched', async (event, data) => {
   return new Promise(async function (resolve, reject) {
     await yandex(data);
     if (winLyrics) {
-      winLyrics.webContents.executeJavaScript(`logState('${data.title}');`);
+      winLyrics.webContents.executeJavaScript(`logState('${data.link}');`);
     }
     resolve(`track_switched: ${data.title}`);
     just_run = true;
@@ -140,6 +140,33 @@ const createLyricsWin = () => {
   });
   winLyrics.setMenuBarVisibility(false);
 
+  winLyrics.webContents.session.webRequest.onBeforeSendHeaders(
+    (details, callback) => {
+      if (details.url.includes('api.music.yandex.net')) {
+        callback({
+          requestHeaders: { Origin: '*', ...details.requestHeaders },
+        });
+      } else {
+        callback({ requestHeaders: { ...details.requestHeaders } });
+      }
+    }
+  );
+
+  winLyrics.webContents.session.webRequest.onHeadersReceived(
+    (details, callback) => {
+      if (details.url.includes('api.music.yandex.net')) {
+        callback({
+          responseHeaders: {
+            'Access-Control-Allow-Origin': ['*'],
+            ...details.responseHeaders,
+          },
+        });
+      } else {
+        callback({ responseHeaders: { ...details.responseHeaders } });
+      }
+    }
+  );
+
   winLyrics.on('closed', () => {
     winLyrics = null;
   });
@@ -151,7 +178,7 @@ ipcMain.handle('lyrics_click', async (event, data) => {
       createLyricsWin();
 
       winLyrics.webContents.on('did-finish-load', function () {
-        winLyrics.webContents.executeJavaScript(`logState('${data.title}');`);
+        winLyrics.webContents.executeJavaScript(`logState('${data.link}');`);
       });
     }
 
