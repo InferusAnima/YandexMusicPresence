@@ -1,6 +1,7 @@
 let lrc;
 let track_progress = 0;
 let track_duration = 0;
+let sign;
 
 const seek = (e) => {
   if (e.srcElement.seeking || e.srcElement.seeked) {
@@ -61,7 +62,7 @@ const fetchTrack = (id) => {
           if (result.result[0].lyricsInfo.hasAvailableSyncLyrics) {
             fetchLyrics(id).then(
               (lyrics) => {
-                resolve(lyrics);
+                resolve({ synced: true, url: lyrics });
               },
               (error) => {
                 reject(`Error: ${error}`);
@@ -70,7 +71,7 @@ const fetchTrack = (id) => {
           } else if (result.result[0].lyricsInfo.hasAvailableTextLyrics) {
             fetchLyrics(id, 'TEXT').then(
               (lyrics) => {
-                resolve(lyrics);
+                resolve({ synced: false, url: lyrics });
               },
               (error) => {
                 reject(`Error: ${error}`);
@@ -89,7 +90,7 @@ const fetchTrack = (id) => {
 
 const fetchLyrics = (id, format = 'LRC') => {
   return new Promise(function (resolve, reject) {
-    const sign = getSign(id);
+    // const sign = getSign(id);
     fetch(
       `https://api.music.yandex.net/tracks/${id}/lyrics?format=${format}&timeStamp=${sign.timestamp}&sign=${sign.sign}`,
       {
@@ -108,6 +109,7 @@ const fetchLyrics = (id, format = 'LRC') => {
       .then(
         (result) => {
           console.log(result);
+          resolve(result.result.downloadUrl);
         },
         (error) => {
           reject(`Error: ${error}`);
@@ -116,12 +118,19 @@ const fetchLyrics = (id, format = 'LRC') => {
   });
 };
 
-const logState = (link) => {
-  const id = link.split('/').slice(-1);
-  fetchTrack(id).then(
-    (lyrics) => {
-      lrc = lyrics;
-      showLRC(createLrcObj(lrc), 'lrcP', 'lrcN', 'ArProgress', 'lrcTime');
+const logState = (track_id, data) => {
+  sign = { sign: data[0], timestamp: data[1] };
+  fetchTrack(track_id).then(
+    (data) => {
+      fetch(data.url)
+        .then((result) => result.text())
+        .then((lyrics) => {
+          if (data.synced) {
+            lrc = lyrics;
+            console.log(lrc);
+            showLRC(createLrcObj(lrc), 'lrcP', 'lrcN', 'ArProgress', 'lrcTime');
+          }
+        });
     },
     (error) => {
       console.log(error);

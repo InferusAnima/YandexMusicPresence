@@ -28,6 +28,12 @@ const btnLyricsPath = isDev
   : path.join(process.resourcesPath, 'lyrics/btnLyrics.js');
 const btnLyrics = fs.readFileSync(btnLyricsPath, 'utf-8', () => {});
 
+const signPath = isDev
+  ? path.join(__dirname, 'lyrics/sign.py')
+  : path.join(process.resourcesPath, 'lyrics/sign.py');
+
+const { PythonShell } = require('python-shell');
+
 app.on('ready', () => {
   win = new BrowserWindow({
     width: 1480,
@@ -178,12 +184,23 @@ ipcMain.handle('lyrics_click', async (event, data) => {
       createLyricsWin();
 
       winLyrics.webContents.on('did-finish-load', function () {
-        winLyrics.webContents.executeJavaScript(`logState('${data.link}');`);
+        const track_id = data.link.split('/').slice(-1);
+        PythonShell.run(
+          signPath,
+          { args: [track_id] },
+          function (err, results) {
+            if (err) throw err;
+          }
+        ).then((sign) => {
+          winLyrics.webContents.executeJavaScript(
+            `logState('${track_id}', ['${sign[0]}', '${sign[1]}']);`
+          );
+        });
       });
     }
 
     if (winLyrics.isVisible()) {
-      winLyrics.hide();
+      winLyrics.close();
     } else {
       winLyrics.show();
 
