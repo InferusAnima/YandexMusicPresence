@@ -193,7 +193,7 @@ ipcMain.handle('lyrics_click', async (event, data) => {
           }
         ).then((sign) => {
           winLyrics.webContents.executeJavaScript(
-            `logState('${track_id}', ['${sign[0]}', '${sign[1]}']);`
+            `logState('${track_id}', ${sign[0]});`
           );
         });
       });

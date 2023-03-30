@@ -119,7 +119,7 @@ const fetchLyrics = (id, format = 'LRC') => {
 };
 
 const logState = (track_id, data) => {
-  sign = { sign: data[0], timestamp: data[1] };
+  sign = data;
   fetchTrack(track_id).then(
     (data) => {
       fetch(data.url)
