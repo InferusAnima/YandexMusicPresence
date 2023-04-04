@@ -65,7 +65,7 @@ const fetchTrack = (id) => {
                 resolve({ synced: true, url: lyrics });
               },
               (error) => {
-                reject(`Error: ${error}`);
+                reject(error);
               }
             );
           } else if (result.result[0].lyricsInfo.hasAvailableTextLyrics) {
@@ -74,7 +74,7 @@ const fetchTrack = (id) => {
                 resolve({ synced: false, url: lyrics });
               },
               (error) => {
-                reject(`Error: ${error}`);
+                reject(error);
               }
             );
           } else {
@@ -82,7 +82,7 @@ const fetchTrack = (id) => {
           }
         },
         (error) => {
-          reject(`Error: ${error}`);
+          reject(error);
         }
       );
   });
@@ -108,11 +108,17 @@ const fetchLyrics = (id, format = 'LRC') => {
       .then((res) => res.json())
       .then(
         (result) => {
-          console.log(result);
+          if (result.error) {
+            var lrcAniElem = document.getElementById('lrcP');
+            lrcAniElem.innerHTML = `<small class="lrcani text-primary"><i>${result.error.name}</i></small>`;
+            reject(result.error.name);
+            return;
+          }
+
           resolve(result.result.downloadUrl);
         },
         (error) => {
-          reject(`Error: ${error}`);
+          reject(error);
         }
       );
   });
@@ -125,15 +131,24 @@ const logState = (track_id, data) => {
       fetch(data.url)
         .then((result) => result.text())
         .then((lyrics) => {
+          lrc = lyrics;
           if (data.synced) {
-            lrc = lyrics;
-            console.log(lrc);
             showLRC(createLrcObj(lrc), 'lrcP', 'lrcN', 'ArProgress', 'lrcTime');
+          } else {
+            const lrcAniElem = document.getElementById('lrcP');
+            const lines = lrc.split('\n');
+            let text = '';
+            for (const i in lines) {
+              text += `${lines[i]}<br>`;
+            }
+            lrcAniElem.innerHTML = text;
           }
         });
     },
     (error) => {
-      console.log(error);
+      console.error(error);
+      var lrcAniElem = document.getElementById('lrcP');
+      lrcAniElem.innerHTML = `<small class="lrcani text-primary"><i>${error}</i></small>`;
     }
   );
 };

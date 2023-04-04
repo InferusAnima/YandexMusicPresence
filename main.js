@@ -92,7 +92,7 @@ ipcMain.handle('track_switched', async (event, data) => {
   return new Promise(async function (resolve, reject) {
     await yandex(data);
     if (winLyrics) {
-      winLyrics.webContents.executeJavaScript(`logState('${data.link}');`);
+      winLyrics.reload();
     }
     resolve(`track_switched: ${data.title}`);
     just_run = true;
@@ -183,17 +183,23 @@ ipcMain.handle('lyrics_click', async (event, data) => {
     if (!winLyrics) {
       createLyricsWin();
 
-      winLyrics.webContents.on('did-finish-load', function () {
-        const track_id = data.link.split('/').slice(-1);
+      winLyrics.webContents.on('did-finish-load', async function () {
+        const track = await win.webContents.executeJavaScript(
+          'externalAPI.getCurrentTrack()'
+        );
+        const track_id = track.link.split('/').slice(-1);
         PythonShell.run(
           signPath,
           { args: [track_id] },
           function (err, results) {
             if (err) throw err;
           }
-        ).then((sign) => {
+        ).then((data) => {
+          const sign = { sign: data[0], timestamp: data[1] };
+          console.log(sign);
+
           winLyrics.webContents.executeJavaScript(
-            `logState('${track_id}', ${sign[0]});`
+            `logState('${track_id}', ${JSON.stringify(sign)});`
           );
         });
       });
